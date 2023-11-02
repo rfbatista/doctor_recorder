@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package audio;
+
+option go_package = "doctor_recorder/api/v1/apiv1";
+
+service AudioService {
+  rpc StreamAudio(stream AudioRequest) returns (AudioResponse);
+}
+
+message AudioRequest {
+  bytes audio_data = 1;
+}
+
+message AudioResponse {
+  string message = 1;
+}
+
