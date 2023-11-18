@@ -1,13 +1,16 @@
+<!DOCTYPE html>
 <html>
-  {{template "header"}}
+{{template "header"}}
 
-  <body>
-    <div class="flex h-screen w-screen py-10">
-      <div
-        href="#"
-        id="texts"
-        class="m-auto block max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 h-full w-full"
-      ></div>
+<body>
+  <main class="flex-grow flex justify-center items-center">
+    <div class="board">
+      <div class="box w-full"></div>
+      <button id="showVideo" class="btn">Compartilhar audio</button>
+      <textarea rows="" cols="" id="localSessionDescription" readonly="true"></textarea>
     </div>
-  </body>
+  </main>
+  <script type="module" src="/static/js/rpc.js"></script>
+</body>
+
 </html>

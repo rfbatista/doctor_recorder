@@ -1,9 +1,11 @@
 package infrastructure
 
+import "doctor_recorder/internal/infrastructure/webrtc"
+
 type AppConfig struct {
-	WebRTCConfig WebRTCConfig
+	WebRTCConfig webrtc.WebRTCConfig
 }
 
-type WebRTCConfig struct {
-	Url string
+func NewAppConfig() (AppConfig, error) {
+	return AppConfig{WebRTCConfig: webrtc.WebRTCConfig{StunUrl: "stun:stun.l.google.com:19302"}}, nil
 }
