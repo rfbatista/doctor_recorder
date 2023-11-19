@@ -31,3 +31,13 @@ func (l *Logger) Info(message string) {
 		fmt.Print(logEntry)
 	}
 }
+
+func (l *Logger) Error(err error) {
+	errorMessage := fmt.Sprintf("[%s] %s ERROR: %v\n", time.Now().Format("2006-01-02 15:04:05"), l.Prefix, err)
+
+	if l.Output != nil {
+		_, _ = l.Output.WriteString(errorMessage)
+	} else {
+		fmt.Print(errorMessage)
+	}
+}

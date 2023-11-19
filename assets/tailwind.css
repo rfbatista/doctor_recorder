@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 .box {
-  @apply m-auto block max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-700  h-full w-full;
+  @apply bg-white border border-gray-200 shadow-lg dark:bg-gray-800 dark:border-gray-700;
 }
 
 .btn {
@@ -13,4 +13,11 @@
 .board {
   max-width: 900px;
   width: 900px;
+}
+
+@media (min-width: 640px) {
+  .w-fixed {
+    flex: 0 1 230px;
+    min-width: 230px;
+  }
 }

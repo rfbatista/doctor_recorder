@@ -4,6 +4,7 @@ import (
 	"doctor_recorder/internal/controllers"
 	"doctor_recorder/internal/infrastructure/logger"
 	"doctor_recorder/internal/infrastructure/webrtc"
+	"doctor_recorder/internal/infrastructure/websocket"
 	"doctor_recorder/internal/view"
 
 	"github.com/labstack/echo/v4"
@@ -13,6 +14,10 @@ import (
 
 func NewApp(config AppConfig) (*echo.Echo, error) {
 	log := logger.NewLogger("app", nil)
+  ws, err := websocket.NewWebsocket(log)
+	if err != nil {
+		panic(err)
+	}
 	wrtc, _ := webrtc.NewWebRTCServer(config.WebRTCConfig, log)
 	e := echo.New()
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -22,8 +27,12 @@ func NewApp(config AppConfig) (*echo.Echo, error) {
 	e.Use(middleware.RequestID())
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	e.Static("/static", "assets")
-	wrtc.Init()
+	err = wrtc.Init()
+	if err != nil {
+		panic(err)
+	}
 	e.POST("/webrtc", wrtc.Handler())
+  e.GET("/ws", ws.Handler)
 	t, err := view.NewTemplateEngine()
 	if err != nil {
 		return nil, err

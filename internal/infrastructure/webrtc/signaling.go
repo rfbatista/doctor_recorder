@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/pion/webrtc/v4"
+	"github.com/pion/webrtc/v3"
 )
 
 func (w *WebRTCServer) Handler() echo.HandlerFunc {

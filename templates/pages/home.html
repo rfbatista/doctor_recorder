@@ -1,15 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 {{template "header"}}
 
 <body>
-  <main class="flex-grow flex justify-center items-center">
-    <div class="board">
-      <div class="box w-full"></div>
-      <button id="showVideo" class="btn">Compartilhar audio</button>
-      <textarea rows="" cols="" id="localSessionDescription" readonly="true"></textarea>
+  <div class="w-full flex flex-col sm:flex-row flex-wrap sm:flex-nowrap flex-grow">
+    <!-- fixed-width -->
+    <div class="w-fixed w-full flex-shrink flex-grow-0 px-4">
+      <div class="top-0 p-4 w-full m-auto">
+        <button id="showVideo" class="btn m-auto" style="margin: auto;">Compartilhar audio</button>
+      </div>
+      <video id="video1" autoplay="true" style="height: 160px; width: 160px; margin: auto;"></video>
     </div>
-  </main>
+    <div role="main" class="w-full h-screen flex flex-row">
+      <div class="basis-3/4 p-2 mx-2">
+        <div class="box h-full"></div>
+      </div>
+      <div class="basis-1/4 p-2 mx-2">
+        <div class="box h-full" id="logs"></div>
+      </div>
+    </div>
+  </div>
   <script type="module" src="/static/js/rpc.js"></script>
 </body>
 

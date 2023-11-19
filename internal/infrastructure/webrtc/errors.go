@@ -8,6 +8,8 @@ var (
 	FailedToCreateAnswer            = &FailedToCreateAnswerError{}
 	FailedToSetLocalDescription     = &FailedToSetLocalDescriptionError{}
 	FailedToCreateNewPeerConnection = &FailedToCreateNewPeerConnectionError{}
+	FailedToSetupCodecs             = &FailedToSetupCodecsError{}
+	FailedToSetupInterceptors       = &FailedToSetupInterceptorsError{}
 )
 
 type FailedToCreateAnswerError struct {
@@ -32,4 +34,20 @@ type FailedToCreateNewPeerConnectionError struct {
 
 func (e *FailedToCreateNewPeerConnectionError) Error() string {
 	return fmt.Sprintf("FailedToCreateNewPeerConnectionError: %v", e.Err)
+}
+
+type FailedToSetupCodecsError struct {
+	Err error
+}
+
+func (e *FailedToSetupCodecsError) Error() string {
+	return fmt.Sprintf("FailedToSetupCodecs: %v", e.Err)
+}
+
+type FailedToSetupInterceptorsError struct {
+	Err error
+}
+
+func (e *FailedToSetupInterceptorsError) Error() string {
+	return fmt.Sprintf("FailedToSetupCodecs: %v", e.Err)
 }
