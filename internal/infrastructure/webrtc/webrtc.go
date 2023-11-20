@@ -17,14 +17,17 @@ var (
 	streamKey                      string
 )
 
+type OnNewICECandidateCallback func(sd *webrtc.SessionDescription) error
+type OnSendOfferCallback func(sd *webrtc.SessionDescription) error
+
 type WebRTCServer struct {
-	config      WebRTCConfig
-	api         *webrtc.API
-	PeerConfig  webrtc.Configuration
-	connections map[string]chan *webrtc.PeerConnection
-	log         *logger.Logger
-	sendSdp     func(sd *webrtc.SessionDescription) error
-	sendIce     func(sd *webrtc.ICECandidate) error
+	config                    WebRTCConfig
+	api                       *webrtc.API
+	PeerConfig                webrtc.Configuration
+	connections               map[string]chan *webrtc.PeerConnection
+	log                       *logger.Logger
+	onSendOfferCallback       OnSendOfferCallback
+	onNewICECandidateCallback OnNewICECandidateCallback
 }
 
 func NewWebRTCServer(c WebRTCConfig, log *logger.Logger) (WebRTCServer, error) {
