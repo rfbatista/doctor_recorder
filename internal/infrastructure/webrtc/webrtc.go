@@ -17,9 +17,6 @@ var (
 	streamKey                      string
 )
 
-type OnNewICECandidateCallback func(sd *webrtc.SessionDescription) error
-type OnSendOfferCallback func(sd *webrtc.SessionDescription) error
-
 type WebRTCServer struct {
 	config                    WebRTCConfig
 	api                       *webrtc.API
