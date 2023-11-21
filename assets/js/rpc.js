@@ -1,5 +1,5 @@
 import { SignalingChannel } from "./signaling.js";
-
+import { Message } from "./message.js";
 
 let localStream;
 
@@ -17,15 +17,23 @@ let constraints = (window.constraints = {
 
 /**
  * Start session
- * @param {string} RTCPeerConnection
+ * @param {RTCPeerConnection} pc
  */
 async function startSession(pc) {
   log("starting session");
   const offer = await pc.createOffer();
   pc.setLocalDescription(offer);
-  const answer = await signaling.sendOffer(offer);
-  pc.setRemoteDescription(answer);
-  /* startSignaling(pc); */
+  const message = new Message();
+  message.setSDP(offer);
+  await signaling.sendMessage(message.getJSON());
+  signaling.ws.addEventListener("message", (evt) => {
+    console.log(evt);
+    const data = JSON.parse(evt.data);
+    if (data.type == "sdp") {
+      log("received a sdp answer");
+      pc.setRemoteDescription(JSON.parse(data.sdp));
+    }
+  });
   log("finished to start session");
 }
 
@@ -41,8 +49,10 @@ function createSession() {
   pc.oniceconnectionstatechange = () =>
     log(`state changed", ${pc.iceConnectionState}"`);
   pc.onicecandidate = async (event) => {
-    log("ice candidate identified")
-    console.log(event.candidate)
+    const message = new Message();
+    message.setICE(event.candidate);
+    await signaling.sendMessage(message);
+    log("ice candidate identified");
     if (event.candidate === null) {
       /* document.getElementById("localSessionDescription").value = btoa( */
       /*   JSON.stringify(pc.localDescription), */
@@ -50,10 +60,17 @@ function createSession() {
     }
   };
   // Listen for connectionstatechange on the local RTCPeerConnection
+  signaling.ws.addEventListener("message", (evt) => {
+    const data = JSON.parse(evt.data);
+    if (data.type == "ice") {
+      log("received an ice candidate");
+      pc.addIceCandidate(data.ice);
+    }
+  });
   pc.addEventListener("connectionstatechange", (event) => {
     console.log("state", pc.connectionState);
     if (pc.connectionState === "connected") {
-      log("peer connected!")
+      log("peer connected!");
     }
   });
   return pc;
@@ -82,13 +99,13 @@ function handleError(error) {
   if (error.name === "OverconstrainedError") {
     const v = constraints.video;
     log(
-      `The resolution ${v.width.exact}x${v.height.exact} px is not supported by your device.`,
+      `The resolution ${v.width.exact}x${v.height.exact} px is not supported by your device.`
     );
   } else if (error.name === "NotAllowedError") {
     log(
       "Permissions have not been granted to use your camera and " +
         "microphone, you need to allow the page access to your devices in " +
-        "order for the demo to work.",
+        "order for the demo to work."
     );
   }
   errorMsg(`getUserMedia error: ${error.name}`, error);

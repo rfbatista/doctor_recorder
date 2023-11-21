@@ -14,11 +14,12 @@ import (
 
 func NewApp(config AppConfig) (*echo.Echo, error) {
 	log := logger.NewLogger("app", nil)
-  ws, err := websocket.NewWebsocket(log)
+	wrtc, _ := webrtc.NewWebRTCServer(config.WebRTCConfig, log)
+	ws, err := websocket.NewWebsocket(log, &wrtc)
 	if err != nil {
 		panic(err)
 	}
-	wrtc, _ := webrtc.NewWebRTCServer(config.WebRTCConfig, log)
+	ws.Init()
 	e := echo.New()
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
@@ -32,7 +33,7 @@ func NewApp(config AppConfig) (*echo.Echo, error) {
 		panic(err)
 	}
 	e.POST("/webrtc", wrtc.Handler())
-  e.GET("/ws", ws.Handler)
+	e.GET("/ws", ws.Handler)
 	t, err := view.NewTemplateEngine()
 	if err != nil {
 		return nil, err

@@ -11,7 +11,7 @@ func (w *WebRTCServer) NewPeer(offer *webrtc.SessionDescription) (*webrtc.PeerCo
 	w.log.Info("inicializando novo peer")
 	var err error
 	// create new peer
-  peerConn, err := w.api.NewPeerConnection(w.PeerConfig)
+	peerConn, err := w.api.NewPeerConnection(w.PeerConfig)
 	if err != nil {
 		return nil, nil, multierror.Append(FailedToCreateNewPeerConnection, err)
 	}
@@ -36,20 +36,18 @@ func (w *WebRTCServer) NewPeer(offer *webrtc.SessionDescription) (*webrtc.PeerCo
 		}
 	})
 	peerConn.OnICECandidate(func(ice *webrtc.ICECandidate) {
-		w.log.Info("new ice candidate found")
+		w.onNewICECandidateCallback(ice)
 	})
 	peerConn.SetRemoteDescription(*offer)
 	answer, err := peerConn.CreateAnswer(nil)
 	if err != nil {
 		return nil, nil, multierror.Append(FailedToCreateAnswer, err)
 	}
-  w.log.Info("starting to gather ice")
-	gatherComplete := webrtc.GatheringCompletePromise(peerConn)
+	w.log.Info("starting to gather ice")
 	err = peerConn.SetLocalDescription(answer)
 	if err != nil {
 		return nil, nil, multierror.Append(FailedToSetLocalDescription, err)
 	}
-	<-gatherComplete
-  w.log.Info("ice gathering is completed")
+	w.log.Info("ice gathering is completed")
 	return peerConn, &answer, nil
 }

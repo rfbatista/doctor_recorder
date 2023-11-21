@@ -2,8 +2,8 @@ package webrtc
 
 import "github.com/pion/webrtc/v3"
 
-type OnNewICECandidateCallback func(sd *webrtc.SessionDescription) error
-type OnSendOfferCallback func(sd *webrtc.SessionDescription) error
+type OnNewICECandidateCallback func(ice *webrtc.ICECandidate)
+type OnSendOfferCallback func(sd *webrtc.SessionDescription)
 
 func (w *WebRTCServer) SetOnNewICECandidateCallback(callback OnNewICECandidateCallback) {
 	w.onNewICECandidateCallback = callback
