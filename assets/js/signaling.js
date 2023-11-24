@@ -20,6 +20,7 @@ export class SignalingChannel {
 
   async sendMessage(message) {
     try {
+      console.log(message);
       const raw = JSON.stringify(message);
       this.ws.send(raw);
     } catch (e) {

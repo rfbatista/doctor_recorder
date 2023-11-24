@@ -3,82 +3,77 @@ package websocket
 import (
 	"doctor_recorder/internal/infrastructure/logger"
 	"doctor_recorder/internal/infrastructure/webrtc"
-	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	pion "github.com/pion/webrtc/v3"
 )
 
+const (
+	// time to read the next client's pong message
+	pongWait = 60 * time.Second
+	// time period to send pings to client
+	pingPeriod = (pongWait * 9) / 10
+	// time allowed to write a message to client
+	writeWait = 10 * time.Second
+	// max message size allowed
+	maxMessageSize = 8192
+	// I/O read buffer size
+	readBufferSize = 4096
+	// I/O write buffer size
+	writeBufferSize = 4096
+)
+
 func NewWebsocket(log *logger.Logger, wrtc *webrtc.WebRTCServer) (*Websocket, error) {
-	return &Websocket{log: log, webrtc: wrtc}, nil
+	serv := make(ServerSubscriptions)
+	client := make(ClientSubscriptions)
+	serv[TopicWebRTC] = make(ServerTopicSubscribers)
+	client[TopicWebRTC] = make(ClientTopicSubscribers)
+	send := make(chan Message, 1)
+	return &Websocket{log: log, webrtc: wrtc, SendChannel: send, ServerSubscriptions: serv, ClientSubscriptions: client}, nil
 }
 
 var upgrader = websocket.Upgrader{}
 
-type Message struct {
-	Type string                   `json:"type"`
-	Sdp  *pion.SessionDescription `json:"sdp"`
-	Ice  *pion.ICECandidate       `json:"ice"`
-}
-
 type Websocket struct {
-	log    *logger.Logger
-	ws     *websocket.Conn
-	webrtc *webrtc.WebRTCServer
-	conn   *pion.PeerConnection
+	log                 *logger.Logger
+	ws                  *websocket.Conn
+	webrtc              *webrtc.WebRTCServer
+	conn                *pion.PeerConnection
+	SendChannel         chan Message
+	ReceiveChannel      chan Message
+	ServerSubscriptions ServerSubscriptions
+	ClientSubscriptions ClientSubscriptions
 }
 
 func (w *Websocket) Handler(c echo.Context) error {
-	wsconn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
-	w.ws = wsconn
+	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
-		return err
+		return c.NoContent(http.StatusInternalServerError)
 	}
-	go func(ws *websocket.Conn) {
-		defer ws.Close()
-		for {
-			w.log.Info("waiting for new message")
-			_, msg, err := ws.ReadMessage()
-			if err != nil {
-				c.Logger().Error(err)
-			}
-			if msg == nil {
-				continue
-			} else {
-				var clientMessage Message
-				err = json.Unmarshal(msg, &clientMessage)
-				if err != nil {
-					w.log.Error(err)
-				} else {
-					if clientMessage.Type == "sdp" {
-						conn, sdp, _ := w.webrtc.NewPeer(clientMessage.Sdp)
-						w.conn = conn
-						sdpMessage := Message{
-							Type: "sdp",
-							Sdp:  sdp,
-						}
-						ws.WriteJSON(sdpMessage)
-					}
-					if clientMessage.Type == "ice" {
-					}
-				}
-				w.log.Info(fmt.Sprintf("new websocket message %s", clientMessage.Type))
-			}
+	//TODO: adicionar remocao do cliente de todos os topicos
+	defer conn.Close()
+	conn.SetReadLimit(maxMessageSize)
+	conn.SetReadDeadline(time.Now().Add(pongWait))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+	clientId := SubscriberId(uuid.New().String())
+	w.ClientSubscriptions[TopicId(TopicWebRTC)][clientId] = conn
+	defer conn.Close()
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			w.log.Error(fmt.Errorf("failed to read websocket message", err).Error())
+			break
 		}
-	}(wsconn)
-	return nil
-}
-func (w *Websocket) Init() error {
-	w.log.Info("defining callback")
-	callback := func(ice *pion.ICECandidate) {
-		iceMessage := Message{
-			Type: "ice",
-			Ice:  ice,
-		}
-		w.ws.WriteJSON(iceMessage)
+		w.log.Info(fmt.Sprintf("reading message from client: %s", clientId))
+		w.ProcessMessage(conn, clientId, msg)
 	}
-	w.webrtc.SetOnNewICECandidateCallback(callback)
 	return nil
 }

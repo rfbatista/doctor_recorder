@@ -11,7 +11,7 @@ import (
 
 func (w *WebRTCServer) OnTrack(peerConnection *webrtc.PeerConnection) func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 	return func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-    w.log.Info("received a new track")
+		w.log.Info("received a new track")
 		// Send a PLI on an interval so that the publisher is pushing a keyframe every rtcpPLIInterval
 		go func() {
 			ticker := time.NewTicker(time.Second * 3)

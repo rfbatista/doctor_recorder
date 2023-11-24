@@ -18,28 +18,25 @@ var (
 )
 
 type WebRTCServer struct {
-	config                    WebRTCConfig
-	api                       *webrtc.API
-	PeerConfig                webrtc.Configuration
-	connections               map[string]chan *webrtc.PeerConnection
-	log                       *logger.Logger
-	onSendOfferCallback       OnSendOfferCallback
-	onNewICECandidateCallback OnNewICECandidateCallback
+	config     WebRTCConfig
+	api        *webrtc.API
+	PeerConfig webrtc.Configuration
+	log        *logger.Logger
+	Peers      Peers
 }
 
 func NewWebRTCServer(c WebRTCConfig, log *logger.Logger) (WebRTCServer, error) {
-	return WebRTCServer{config: c, log: log}, nil
+	return WebRTCServer{config: c, log: log, Peers: make(Peers)}, nil
 }
 
 func (w *WebRTCServer) Init() error {
 	m := &webrtc.MediaEngine{}
-
 	err := setupCodecs(m)
 	if err != nil {
 		return multierror.Append(FailedToSetupCodecs, err)
 	}
 
-	i, err := setupInterceptors(m)
+	// i, err := setupInterceptors(m)
 	if err != nil {
 		return multierror.Append(FailedToSetupInterceptors, err)
 	}
@@ -50,7 +47,7 @@ func (w *WebRTCServer) Init() error {
 			},
 		},
 	}
-	w.api = webrtc.NewAPI(webrtc.WithMediaEngine(m), webrtc.WithInterceptorRegistry(i))
+	w.api = webrtc.NewAPI(webrtc.WithMediaEngine(m))
 	return nil
 }
 

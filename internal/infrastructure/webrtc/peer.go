@@ -7,7 +7,11 @@ import (
 	"github.com/pion/webrtc/v3"
 )
 
-func (w *WebRTCServer) NewPeer(offer *webrtc.SessionDescription) (*webrtc.PeerConnection, *webrtc.SessionDescription, error) {
+type PeerID string
+
+type Peers map[PeerID]*webrtc.PeerConnection
+
+func (w *WebRTCServer) NewPeer(peerId PeerID, offer *webrtc.SessionDescription, trackerHandler TrackHandler, iceCandidateHandler OnNewICECandidateCallback) (*webrtc.PeerConnection, *webrtc.SessionDescription, error) {
 	w.log.Info("inicializando novo peer")
 	var err error
 	// create new peer
@@ -15,39 +19,37 @@ func (w *WebRTCServer) NewPeer(offer *webrtc.SessionDescription) (*webrtc.PeerCo
 	if err != nil {
 		return nil, nil, multierror.Append(FailedToCreateNewPeerConnection, err)
 	}
+	w.Peers[peerId] = peerConn
 	// Allow us to receive 1 audio track, and 1 video track
 	if _, err = peerConn.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
-		panic(err)
+		return nil, nil, err
 	} else if _, err = peerConn.AddTransceiverFromKind(webrtc.RTPCodecTypeVideo); err != nil {
-		panic(err)
+		return nil, nil, err
 	}
-	peerConn.OnTrack(w.OnTrack(peerConn))
+	peerConn.OnTrack(trackerHandler)
 	peerConn.OnICEConnectionStateChange(func(connectionState webrtc.ICEConnectionState) {
-		w.log.Info("ice connection state changed")
-		fmt.Printf("Connection State has changed %s \n", connectionState.String())
+		w.log.Info(fmt.Sprintf("connection with peer %s has changed: %s", peerId, connectionState.String()))
 		if connectionState == webrtc.ICEConnectionStateConnected {
-			fmt.Println("Ctrl+C the remote client to stop the demo")
+			w.log.Info(fmt.Sprintf("connection with peer %s has connected", peerId))
 		} else if connectionState == webrtc.ICEConnectionStateFailed || connectionState == webrtc.ICEConnectionStateClosed {
-			fmt.Println("Done writing media files")
+			w.log.Info(fmt.Sprintf("Done writing media files"))
 			// Gracefully shutdown the peer connection
 			if closeErr := peerConn.Close(); closeErr != nil {
-				w.log.Error(closeErr)
+				w.log.Error(closeErr.Error())
 			}
 		}
 	})
 	peerConn.OnICECandidate(func(ice *webrtc.ICECandidate) {
-		w.onNewICECandidateCallback(ice)
+		iceCandidateHandler(ice)
 	})
 	peerConn.SetRemoteDescription(*offer)
 	answer, err := peerConn.CreateAnswer(nil)
 	if err != nil {
 		return nil, nil, multierror.Append(FailedToCreateAnswer, err)
 	}
-	w.log.Info("starting to gather ice")
 	err = peerConn.SetLocalDescription(answer)
 	if err != nil {
 		return nil, nil, multierror.Append(FailedToSetLocalDescription, err)
 	}
-	w.log.Info("ice gathering is completed")
 	return peerConn, &answer, nil
 }

@@ -32,7 +32,7 @@ func (l *Logger) Info(message string) {
 	}
 }
 
-func (l *Logger) Error(err error) {
+func (l *Logger) Error(err string) {
 	errorMessage := fmt.Sprintf("[%s] %s ERROR: %v\n", time.Now().Format("2006-01-02 15:04:05"), l.Prefix, err)
 
 	if l.Output != nil {

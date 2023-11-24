@@ -16,6 +16,8 @@ export class Message {
   getJSON() {
     return {
       type: this.type,
+      action: "publish",
+      topic: "webrtc",
       ice: this.ice,
       sdp: this.sdp,
     };
