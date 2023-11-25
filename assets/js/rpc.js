@@ -18,36 +18,21 @@ let constraints = (window.constraints = {
 });
 
 /**
- * Handle success of media access
- * @param {MediaStream} stream
- */
-async function startRPC(stream) {
-  window.stream = stream; // make variable available to browser console
-  const tracks = stream.getTracks();
-  if (tracks.length > 0) {
-    log(`Using Audio device: ${tracks[0].label}`);
-  }
-  const pc = startSession(stream);
-  for (const track of stream.getAudioTracks()) {
-    log("adding track to Peer Connection");
-    pc.addTrack(track, stream);
-  }
-}
-
-/**
  * Start session,
  * @param {MediaStream} stream
  */
-async function startSession(stream) {
+async function startRPC(stream) {
   log("starting session");
   const pc = new RTCPeerConnection(configuration);
+  stream.getTracks().forEach((track) => pc.addTrack(track, stream));
   pc.onicecandidate = async (event) => {
-    if (!event.candidate) {
+    if (event.candidate === null) {
+      console.log(event);
       return;
     }
     const message = new Message();
     message.setICE(event.candidate.candidate);
-    await signaling.sendMessage(message.getJSON());
+    /* await signaling.sendMessage(message.getJSON()); */
   };
   pc.addEventListener("connectionstatechange", () => {
     log(`connection state change ${pc.connectionState}`);
@@ -60,36 +45,47 @@ async function startSession(stream) {
     if (data.type == "sdp") {
       if (!pc.currentRemoteDescription) {
         log("received a sdp answer");
-        const answer = JSON.parse(data.sdp);
-        const answerDescription = new RTCSessionDescription(answer);
-        pc.setRemoteDescription(answerDescription);
+        const answer = JSON.parse(atob(data.sdp));
+        /* const answerDescription = new RTCSessionDescription(answer); */
+        pc.setRemoteDescription(answer);
+        log("remote sdp set");
       }
     }
-    if (data.type == "ice") {
+    if (data.type == "ice" && pc.currentRemoteDescription) {
       log("received an ice candidate");
-      const candidate = new RTCIceCandidate(data.ice);
-      pc.addIceCandidate(candidate);
+      console.log(data);
+      const candidate = new RTCIceCandidate({
+        candidate: data.ice.candidate,
+        sdpMid: data.ice.sdpMid,
+        sdpMLineIndex: data.ice.sdpMLineIndex,
+        usernameFragment: data.ice.usernameFragment,
+      });
+      pc.addIceCandidate(candidate).catch(console.error);
     }
   });
-  stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
   const offer = await pc.createOffer();
-  pc.setLocalDescription(offer);
+  await pc.setLocalDescription(offer);
   const message = new Message();
-  message.setSDP(offer);
+  message.setSDP(btoa(JSON.stringify(pc.localDescription)));
   signaling.sendMessage(message.getJSON()).catch(console.error);
+  let dc = pc.createDataChannel("data");
+  dc.onmessage = (event) => {
+    log(event.data);
+  };
 }
 
 function handleError(error) {
   if (error.name === "OverconstrainedError") {
     const v = constraints.video;
     log(
-      `The resolution ${v.width.exact}x${v.height.exact} px is not supported by your device.`
+      `The resolution ${v.width.exact}x${v.height.exact} px is not supported by your device.`,
     );
   } else if (error.name === "NotAllowedError") {
     log(
       "Permissions have not been granted to use your camera and " +
         "microphone, you need to allow the page access to your devices in " +
-        "order for the demo to work."
+        "order for the demo to work.",
     );
   }
   errorMsg(`getUserMedia error: ${error.name}`, error);
@@ -107,9 +103,9 @@ async function init(e) {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     const video = document.querySelector("#video1");
     video.srcObject = stream;
-    video.onloadedmetadata = () => {
-      video.play();
-    };
+    /* video.onloadedmetadata = () => { */
+    /*   video.play(); */
+    /* }; */
     startRPC(stream);
     e.target.disabled = true;
   } catch (e) {

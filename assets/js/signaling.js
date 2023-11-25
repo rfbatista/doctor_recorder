@@ -20,11 +20,11 @@ export class SignalingChannel {
 
   async sendMessage(message) {
     try {
-      console.log(message);
+      console.log("stringfing", message);
       const raw = JSON.stringify(message);
       this.ws.send(raw);
     } catch (e) {
-      console.error(e);
+      console.error("falha ao enviar mensagem", e);
       return;
     }
   }

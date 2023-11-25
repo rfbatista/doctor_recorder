@@ -2,7 +2,7 @@ package webrtc
 
 import (
 	"github.com/pion/interceptor"
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 )
 
 func setupCodecs(m *webrtc.MediaEngine) error {

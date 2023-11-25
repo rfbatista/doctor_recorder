@@ -3,7 +3,7 @@ package webrtc
 import (
 	"fmt"
 
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 )
 
 func (w *WebRTCServer) AddIceCandidate(peerId PeerID, iceCandidate *webrtc.ICECandidateInit) {

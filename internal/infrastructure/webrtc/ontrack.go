@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/pion/rtcp"
-	"github.com/pion/webrtc/v3"
+	"github.com/pion/webrtc/v4"
 )
 
 func (w *WebRTCServer) OnTrack(peerConnection *webrtc.PeerConnection) func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
@@ -37,7 +37,7 @@ func (w *WebRTCServer) OnTrack(peerConnection *webrtc.PeerConnection) func(track
 
 		codec := track.Codec()
 		if strings.EqualFold(codec.MimeType, webrtc.MimeTypeOpus) {
-			fmt.Println("Got Opus track, saving to disk as output.opus (48 kHz, 2 channels)")
+			fmt.Println("nada ")
 			// saveToDisk(oggFile, track)
 		} else if strings.EqualFold(codec.MimeType, webrtc.MimeTypeVP8) {
 			fmt.Println("Got VP8 track, saving to disk as output.ivf")

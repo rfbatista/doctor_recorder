@@ -4,12 +4,15 @@ import (
 	"doctor_recorder/internal/infrastructure/logger"
 	"doctor_recorder/internal/infrastructure/webrtc"
 	"doctor_recorder/internal/infrastructure/websocket"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
-	pion "github.com/pion/webrtc/v3"
+	pion "github.com/pion/webrtc/v4"
 )
 
 func NewTranscriber(log *logger.Logger, ws *websocket.Websocket, webrtc *webrtc.WebRTCServer) (*Transcriber, error) {
+
 	return &Transcriber{log: log, ws: ws, webrtc: webrtc}, nil
 }
 
@@ -43,7 +46,7 @@ func (t *Transcriber) SubscriberCallback() websocket.SubscriptionCallback {
 }
 
 func (t *Transcriber) ReceiveIceCandidate(clientId websocket.SubscriberId, message websocket.Message) {
-	t.webrtc.AddIceCandidate(webrtc.PeerID(clientId), &pion.ICECandidateInit{Candidate: message.Ice})
+	t.webrtc.AddIceCandidate(webrtc.PeerID(clientId), message.Ice)
 }
 
 func (t *Transcriber) SendIceCandidate(clientId websocket.SubscriberId, iceCandidate *pion.ICECandidate) {
@@ -53,13 +56,15 @@ func (t *Transcriber) SendIceCandidate(clientId websocket.SubscriberId, iceCandi
 		Type:   websocket.MessageTypeIceCandidate,
 		Action: websocket.Publish,
 		Topic:  websocket.TopicWebRTC,
-		Ice:    cand.Candidate,
+		Ice:    &cand,
 	}
 	t.ws.Publish(websocket.TopicWebRTC, websocket.SubscriberId(clientId), message)
 }
 
 func (t *Transcriber) ReceiveSdp(clientId websocket.SubscriberId, message websocket.Message) {
-	_, sdp, err := t.webrtc.NewPeer(webrtc.PeerID(clientId), message.Sdp, t.HandleTracker(), t.ServerNewIceCandidate(clientId))
+	var sdp *pion.SessionDescription
+	t.Decode(message.Sdp, &sdp)
+	_, sdp, err := t.webrtc.NewPeer(webrtc.PeerID(clientId), sdp, t.HandleTracker(), t.ServerNewIceCandidate(clientId))
 	if err != nil {
 		t.log.Error(fmt.Errorf("failed to add new peer in webrtc: %s", err).Error())
 		return
@@ -70,21 +75,21 @@ func (t *Transcriber) ReceiveSdp(clientId websocket.SubscriberId, message websoc
 
 func (t *Transcriber) SendSdp(clientId webrtc.PeerID, sdp *pion.SessionDescription) {
 	t.log.Info("sending ice candidate")
+
+	s, err := t.Encode(sdp)
+	if err != nil {
+		t.log.Error("falha ao codificar sdp")
+		return
+	}
 	message := websocket.Message{
 		Type:   websocket.MessageTypeSDP,
 		Action: websocket.Publish,
 		Topic:  websocket.TopicWebRTC,
-		Sdp:    sdp,
+		Sdp:    s,
 	}
 	t.ws.Publish(websocket.TopicWebRTC, websocket.SubscriberId(clientId), message)
 }
 
-func (t *Transcriber) HandleTracker() webrtc.TrackHandler {
-	return func(track *pion.TrackRemote, receiver *pion.RTPReceiver) {
-		t.log.Info("track received!!")
-		return
-	}
-}
 
 func (t *Transcriber) ServerNewIceCandidate(clientId websocket.SubscriberId) webrtc.OnNewICECandidateCallback {
 	return func(ice *pion.ICECandidate) {
@@ -103,4 +108,25 @@ func (t *Transcriber) SendError(topic websocket.TopicId, clientId websocket.Subs
 		Error: err,
 	}
 	t.ws.Publish(websocket.TopicWebRTC, clientId, message)
+}
+
+func (t *Transcriber) Encode(obj interface{}) (string, error) {
+	b, err := json.Marshal(obj)
+	if err != nil {
+		return "", nil
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
+func (t *Transcriber) Decode(in string, obj interface{}) {
+	b, err := base64.StdEncoding.DecodeString(in)
+	if err != nil {
+		panic(err)
+	}
+	t.log.Info(string(b))
+
+	err = json.Unmarshal(b, obj)
+	if err != nil {
+		panic(err)
+	}
 }

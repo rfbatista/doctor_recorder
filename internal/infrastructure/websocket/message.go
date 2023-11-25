@@ -1,6 +1,6 @@
 package websocket
 
-import pion "github.com/pion/webrtc/v3"
+import pion "github.com/pion/webrtc/v4"
 
 type Action string
 
@@ -25,10 +25,10 @@ const (
 )
 
 type Message struct {
-	Type   MessageType              `json:"type"`
-	Action Action                   `json:"action"`
-	Topic  TopicId                  `json:"topic"`
-	Sdp    *pion.SessionDescription `json:"sdp"`
-	Ice    string                   `json:"ice"`
-	Error  string                   `json:"error"`
+	Type   MessageType            `json:"type"`
+	Action Action                 `json:"action"`
+	Topic  TopicId                `json:"topic"`
+	Sdp    string                 `json:"sdp"`
+	Ice    *pion.ICECandidateInit `json:"ice"`
+	Error  string                 `json:"error"`
 }
