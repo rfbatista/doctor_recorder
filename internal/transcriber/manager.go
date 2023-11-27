@@ -123,7 +123,6 @@ func (t *Transcriber) Decode(in string, obj interface{}) {
 	if err != nil {
 		panic(err)
 	}
-	t.log.Info(string(b))
 
 	err = json.Unmarshal(b, obj)
 	if err != nil {

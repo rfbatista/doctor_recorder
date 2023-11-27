@@ -9,11 +9,14 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/pion/interceptor v0.1.25
+	github.com/pion/randutil v0.1.0
 	github.com/pion/rtcp v1.2.12
+	github.com/pion/rtp v1.8.3
 	github.com/pion/webrtc/v3 v3.2.23
 	github.com/pion/webrtc/v4 v4.0.0-beta.6
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/echo-swagger v1.4.1
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/net v0.18.0
 	google.golang.org/grpc v1.59.0
 	gopkg.in/hraban/opus.v2 v2.0.0-20230925203106-0188a62cb302
@@ -40,8 +43,6 @@ require (
 	github.com/pion/ice/v3 v3.0.1 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.8 // indirect
-	github.com/pion/randutil v0.1.0 // indirect
-	github.com/pion/rtp v1.8.3 // indirect
 	github.com/pion/sctp v1.8.9 // indirect
 	github.com/pion/sdp/v3 v3.0.6 // indirect
 	github.com/pion/srtp/v2 v2.0.18 // indirect
