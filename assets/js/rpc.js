@@ -41,28 +41,58 @@ async function startRPC(stream) {
     }
   });
   signaling.ws.addEventListener("message", (evt) => {
-    const data = JSON.parse(evt.data);
-    if (data.type == "sdp") {
-      if (!pc.currentRemoteDescription) {
-        log("received a sdp answer");
-        const answer = JSON.parse(atob(data.sdp));
-        /* const answerDescription = new RTCSessionDescription(answer); */
-        pc.setRemoteDescription(answer);
-        log("remote sdp set");
-      }
-    }
-    if (data.type == "ice" && pc.currentRemoteDescription) {
-      log("received an ice candidate");
+    try {
+      const data = JSON.parse(evt.data);
       console.log(data);
-      const candidate = new RTCIceCandidate({
-        candidate: data.ice.candidate,
-        sdpMid: data.ice.sdpMid,
-        sdpMLineIndex: data.ice.sdpMLineIndex,
-        usernameFragment: data.ice.usernameFragment,
-      });
-      pc.addIceCandidate(candidate).catch(console.error);
+      if (data.type == "sdp") {
+        if (!pc.currentRemoteDescription) {
+          log("received a sdp answer");
+          const answer = JSON.parse(atob(data.sdp));
+          /* const answerDescription = new RTCSessionDescription(answer); */
+          pc.setRemoteDescription(answer);
+          log("remote sdp set");
+        }
+      }
+      if (data.type == "ice" && pc.currentRemoteDescription) {
+        log("received an ice candidate");
+        console.log(data);
+        const candidate = new RTCIceCandidate({
+          candidate: data.ice.candidate,
+          sdpMid: data.ice.sdpMid,
+          sdpMLineIndex: data.ice.sdpMLineIndex,
+          usernameFragment: data.ice.usernameFragment,
+        });
+        pc.addIceCandidate(candidate).catch(console.error);
+      }
+      if (data.type == "transcription" && pc.currentRemoteDescription) {
+        const logs = document.querySelector("#transcript");
+        if (Array.isArray(data.Transcription?.result))
+          for (const result of data.Transcription.result) {
+            if (result == "") continue;
+            const time = new Date().getTime();
+            logs.innerHTML +=
+              `<div class="px-4 py-2 rounded-lg inline-block rounded-bl-none bg-gray-300 text-gray-600 m-2" id="${new String(time)}">
+                </div>` + "<br>";
+            Typing(new String(time), result);
+          }
+      }
+    } catch (e) {
+      console.error(e);
     }
   });
+
+  async function Typing(id, text) {
+    var i = 0;
+    var speed = 25; /* The speed/duration of the effect in milliseconds */
+    const callback = () => {
+      if (i < text.length) {
+        document.getElementById(id).innerHTML += text.charAt(i);
+        i++;
+        setTimeout(callback, speed);
+      }
+    };
+    callback()
+  }
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
@@ -79,13 +109,13 @@ function handleError(error) {
   if (error.name === "OverconstrainedError") {
     const v = constraints.video;
     log(
-      `The resolution ${v.width.exact}x${v.height.exact} px is not supported by your device.`,
+      `The resolution ${v.width.exact}x${v.height.exact} px is not supported by your device.`
     );
   } else if (error.name === "NotAllowedError") {
     log(
       "Permissions have not been granted to use your camera and " +
         "microphone, you need to allow the page access to your devices in " +
-        "order for the demo to work.",
+        "order for the demo to work."
     );
   }
   errorMsg(`getUserMedia error: ${error.name}`, error);

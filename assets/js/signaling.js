@@ -2,7 +2,7 @@ export class SignalingChannel {
   constructor(log) {
     this.log = log;
     this.ws = new WebSocket("ws://" + document.location.host + "/ws");
-    this.ws.addEventListener("open", (event) => {
+    this.ws.addEventListener("open", () => {
       log("websocket connection stabelished");
     });
     this.ws.onopen = function () {

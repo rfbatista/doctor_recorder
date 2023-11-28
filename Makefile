@@ -15,4 +15,5 @@ reload: export C_INCLUDE_PATH=/home/renan/projetos/doctor_recorder/whisper.cpp/w
 reload: export LIBRARY_PATH=/home/renan/projetos/doctor_recorder/whisper.cpp/libwhisper.a
 reload:
 	air
-
+trans:
+	pipenv run python whisper

@@ -64,7 +64,7 @@ func (t *Transcriber) SendIceCandidate(clientId websocket.SubscriberId, iceCandi
 func (t *Transcriber) ReceiveSdp(clientId websocket.SubscriberId, message websocket.Message) {
 	var sdp *pion.SessionDescription
 	t.Decode(message.Sdp, &sdp)
-	_, sdp, err := t.webrtc.NewPeer(webrtc.PeerID(clientId), sdp, t.HandleTracker(), t.ServerNewIceCandidate(clientId))
+	_, sdp, err := t.webrtc.NewPeer(webrtc.PeerID(clientId), sdp, t.HandleTracker(clientId), t.ServerNewIceCandidate(clientId))
 	if err != nil {
 		t.log.Error(fmt.Errorf("failed to add new peer in webrtc: %s", err).Error())
 		return
@@ -89,7 +89,6 @@ func (t *Transcriber) SendSdp(clientId webrtc.PeerID, sdp *pion.SessionDescripti
 	}
 	t.ws.Publish(websocket.TopicWebRTC, websocket.SubscriberId(clientId), message)
 }
-
 
 func (t *Transcriber) ServerNewIceCandidate(clientId websocket.SubscriberId) webrtc.OnNewICECandidateCallback {
 	return func(ice *pion.ICECandidate) {
